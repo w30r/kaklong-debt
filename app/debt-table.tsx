@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Trash, Check } from "lucide-react";
 
 interface DebtTableProps {
   debts: BankDebt[];
@@ -52,8 +52,13 @@ export function DebtTable({ debts }: DebtTableProps) {
   });
 
   const SortIcon = ({ col }: { col: SortKey }) => {
-    if (sortKey !== col) return <ArrowUpDown className="ml-1 size-3 text-muted-foreground/50" />;
-    return sortDir === "asc" ? <ArrowUp className="ml-1 size-3" /> : <ArrowDown className="ml-1 size-3" />;
+    if (sortKey !== col)
+      return <ArrowUpDown className="ml-1 size-3 text-muted-foreground/50" />;
+    return sortDir === "asc" ? (
+      <ArrowUp className="ml-1 size-3" />
+    ) : (
+      <ArrowDown className="ml-1 size-3" />
+    );
   };
 
   const formatCurrency = (val: number) =>
@@ -61,9 +66,12 @@ export function DebtTable({ debts }: DebtTableProps) {
 
   const statusVariant = (status: BankDebt["status"]) => {
     switch (status) {
-      case "paid-off": return "default";
-      case "late": return "destructive";
-      default: return "secondary";
+      case "paid-off":
+        return "default";
+      case "late":
+        return "destructive";
+      default:
+        return "secondary";
     }
   };
 
@@ -92,7 +100,10 @@ export function DebtTable({ debts }: DebtTableProps) {
                       className="cursor-pointer select-none hover:text-foreground transition-colors"
                       onClick={() => toggleSort(key)}
                     >
-                      <span className="inline-flex items-center">{label}<SortIcon col={key} /></span>
+                      <span className="inline-flex items-center">
+                        {label}
+                        <SortIcon col={key} />
+                      </span>
                     </TableHead>
                   ))}
                   <TableHead className="text-right">Actions</TableHead>
@@ -106,30 +117,64 @@ export function DebtTable({ debts }: DebtTableProps) {
                     onClick={() => router.push(`/debt/${debt._id}`)}
                   >
                     <TableCell className="font-medium">{debt.bank}</TableCell>
-                    <TableCell className="text-muted-foreground">{debt.type}</TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">{formatCurrency(debt.totalAmount)}</TableCell>
-                    <TableCell className="tabular-nums font-medium">{formatCurrency(debt.outstanding)}</TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">{formatCurrency(debt.monthlyPayment)}</TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">{debt.interestRate}%</TableCell>
-                    <TableCell className="text-muted-foreground">{debt.nextPaymentDate}</TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariant(debt.status)}>{debt.status}</Badge>
+                    <TableCell className="text-muted-foreground">
+                      {debt.type}
                     </TableCell>
-                    <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      {formatCurrency(debt.totalAmount)}
+                    </TableCell>
+                    <TableCell className="tabular-nums font-medium">
+                      {formatCurrency(debt.outstanding)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      {formatCurrency(debt.monthlyPayment)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      {debt.interestRate}%
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {debt.nextPaymentDate}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(debt.status)}>
+                        {debt.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell
+                      className="text-right space-x-1 "
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {debt.status !== "paid-off" && (
-                        <form action={async (fd) => { await markAsPaidOff(debt._id); }} className="inline">
-                          <Button type="submit" variant="default" size="sm">Paid Off</Button>
+                        <form
+                          action={async (fd) => {
+                            await markAsPaidOff(debt._id);
+                          }}
+                          className="inline "
+                        >
+                          <Button type="submit" variant="default" size="sm">
+                            <Check />
+                          </Button>
                         </form>
                       )}
-                      <form action={async (fd) => { await deleteDebt(debt._id); }} className="inline">
-                        <Button type="submit" variant="destructive" size="sm">Delete</Button>
+                      <form
+                        action={async (fd) => {
+                          await deleteDebt(debt._id);
+                        }}
+                        className="inline"
+                      >
+                        <Button type="submit" variant="destructive" size="sm">
+                          <Trash />
+                        </Button>
                       </form>
                     </TableCell>
                   </TableRow>
                 ))}
                 {sorted.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={9}
+                      className="h-24 text-center text-muted-foreground"
+                    >
                       No debts tracked yet. Add one to get started.
                     </TableCell>
                   </TableRow>
@@ -153,16 +198,22 @@ export function DebtTable({ debts }: DebtTableProps) {
                   <p className="font-semibold text-foreground">{debt.bank}</p>
                   <p className="text-sm text-muted-foreground">{debt.type}</p>
                 </div>
-                <Badge variant={statusVariant(debt.status)}>{debt.status}</Badge>
+                <Badge variant={statusVariant(debt.status)}>
+                  {debt.status}
+                </Badge>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                 <div>
                   <p className="text-muted-foreground text-xs">Outstanding</p>
-                  <p className="font-medium tabular-nums">{formatCurrency(debt.outstanding)}</p>
+                  <p className="font-medium tabular-nums">
+                    {formatCurrency(debt.outstanding)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Monthly</p>
-                  <p className="tabular-nums">{formatCurrency(debt.monthlyPayment)}</p>
+                  <p className="tabular-nums">
+                    {formatCurrency(debt.monthlyPayment)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Interest</p>
@@ -173,14 +224,41 @@ export function DebtTable({ debts }: DebtTableProps) {
                   <p className="text-foreground">{debt.nextPaymentDate}</p>
                 </div>
               </div>
-              <div className="flex gap-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="flex gap-2 pt-2 border-t border-border"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {debt.status !== "paid-off" && (
-                  <form action={async (fd) => { await markAsPaidOff(debt._id); }} className="flex-1">
-                    <Button type="submit" variant="default" size="sm" className="w-full">Paid Off</Button>
+                  <form
+                    action={async (fd) => {
+                      await markAsPaidOff(debt._id);
+                    }}
+                    className="flex-1"
+                  >
+                    <Button
+                      type="submit"
+                      variant="default"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Check className="mr-2" />
+                    </Button>
                   </form>
                 )}
-                <form action={async (fd) => { await deleteDebt(debt._id); }} className="flex-1">
-                  <Button type="submit" variant="destructive" size="sm" className="w-full">Delete</Button>
+                <form
+                  action={async (fd) => {
+                    await deleteDebt(debt._id);
+                  }}
+                  className="flex-1"
+                >
+                  <Button
+                    type="submit"
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                  >
+                    Delete
+                  </Button>
                 </form>
               </div>
             </CardContent>

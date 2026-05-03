@@ -250,7 +250,11 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
           <Badge variant={statusVariant(debt.status)} className="text-sm">
             {debt.status}
           </Badge>
-          <Button variant="ghost" size="icon-sm" onClick={() => setEditing(true)}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setEditing(true)}
+          >
             <Pencil className="size-4" />
           </Button>
         </div>
@@ -304,7 +308,9 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
               debt.createdAt
                 ? {
                     label: "Created",
-                    value: new Date(debt.createdAt!).toLocaleDateString("en-MY"),
+                    value: new Date(debt.createdAt!).toLocaleDateString(
+                      "en-MY",
+                    ),
                   }
                 : null,
             ]
@@ -332,8 +338,16 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
             Mark as Paid Off
           </Button>
         )}
-        <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-          {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+        <Button
+          variant="destructive"
+          onClick={handleDelete}
+          disabled={deleting}
+        >
+          {deleting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Trash2 className="size-4" />
+          )}
           Delete
         </Button>
       </div>

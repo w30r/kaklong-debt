@@ -80,6 +80,7 @@ export async function updateDebt(id: string, formData: FormData): Promise<{ succ
       monthlyPayment: parseFloat(formData.get("monthlyPayment") as string) || 0,
       interestRate: parseFloat(formData.get("interestRate") as string) || 0,
       nextPaymentDate: formData.get("nextPaymentDate") as string,
+      status: formData.get("status") as BankDebt["status"],
       updatedAt: new Date().toISOString(),
     };
 

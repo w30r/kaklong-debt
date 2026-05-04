@@ -8,6 +8,7 @@ import { LogOut } from "lucide-react";
 
 export default async function Home() {
   const debts = await getDebts();
+  console.log("🚀 ~ Home ~ debts:", debts);
 
   const totalDebt = debts.reduce((sum, d) => sum + d.outstanding, 0);
   const totalDebtBebetul = debts.reduce((sum, d) => sum + d.totalAmount, 0);

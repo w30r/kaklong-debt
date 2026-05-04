@@ -1,5 +1,8 @@
 "use server";
 
+import dns from "dns";
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 import clientPromise from "@/lib/mongodb";
 import { BankDebt } from "@/types/bank-debt";
 import { ObjectId } from "mongodb";
@@ -28,7 +31,9 @@ export async function getDebts(): Promise<BankDebt[]> {
   }
 }
 
-export async function addDebt(formData: FormData): Promise<{ success: boolean; error?: string }> {
+export async function addDebt(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const bank = formData.get("bank") as string;
     const type = formData.get("type") as string;
@@ -39,7 +44,10 @@ export async function addDebt(formData: FormData): Promise<{ success: boolean; e
     const nextPaymentDate = formData.get("nextPaymentDate") as string;
 
     if (!bank || !type || isNaN(outstanding)) {
-      return { success: false, error: "Bank, type, and outstanding amount are required" };
+      return {
+        success: false,
+        error: "Bank, type, and outstanding amount are required",
+      };
     }
 
     const client = await clientPromise;
@@ -67,7 +75,10 @@ export async function addDebt(formData: FormData): Promise<{ success: boolean; e
   }
 }
 
-export async function updateDebt(id: string, formData: FormData): Promise<{ success: boolean; error?: string }> {
+export async function updateDebt(
+  id: string,
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const client = await clientPromise;
     const db = client.db(DB_NAME);
@@ -96,7 +107,9 @@ export async function updateDebt(id: string, formData: FormData): Promise<{ succ
   }
 }
 
-export async function markAsPaidOff(id: string): Promise<{ success: boolean; error?: string }> {
+export async function markAsPaidOff(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const client = await clientPromise;
     const db = client.db(DB_NAME);
@@ -111,7 +124,7 @@ export async function markAsPaidOff(id: string): Promise<{ success: boolean; err
           status: "paid-off",
           updatedAt: new Date().toISOString(),
         },
-      }
+      },
     );
 
     revalidatePath("/");
@@ -122,7 +135,9 @@ export async function markAsPaidOff(id: string): Promise<{ success: boolean; err
   }
 }
 
-export async function deleteDebt(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteDebt(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const client = await clientPromise;
     const db = client.db(DB_NAME);

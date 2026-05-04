@@ -32,7 +32,7 @@ export function Sidebar() {
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-6">
+        <div className="p-6 mt-12">
           <h2 className="text-xl font-bold tracking-tight">Kaklong</h2>
           <p className="text-sm text-muted-foreground">Finance Tracker</p>
         </div>

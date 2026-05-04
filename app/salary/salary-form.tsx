@@ -37,12 +37,12 @@ export function SalaryForm() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Add Entry</CardTitle>
+      <CardHeader className="pb-3 sm:pb-4">
+        <CardTitle className="text-lg">Add Entry</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="flex flex-col gap-1 sm:gap-2">
             <Label htmlFor="amount">Amount (RM)</Label>
             <Input
               id="amount"
@@ -53,7 +53,7 @@ export function SalaryForm() {
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
             />
           </div>
-          <div className="flex flex-col gap-2 sm:col-span-2">
+          <div className="flex flex-col gap-1 sm:gap-2 sm:col-span-2">
             <Label htmlFor="description">Description</Label>
             <Input
               id="description"
@@ -64,7 +64,7 @@ export function SalaryForm() {
               }
             />
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1 sm:gap-2">
             <Label htmlFor="date">Date</Label>
             <Input
               id="date"
@@ -74,7 +74,7 @@ export function SalaryForm() {
             />
           </div>
         </div>
-        <Button onClick={handleSubmit} disabled={saving} className="mt-4">
+        <Button onClick={handleSubmit} disabled={saving} className="mt-3 sm:mt-4 w-full sm:w-auto">
           {saving ? "Adding..." : "Add Entry"}
         </Button>
       </CardContent>

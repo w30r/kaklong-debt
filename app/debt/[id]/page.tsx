@@ -4,7 +4,11 @@ import Link from "next/link";
 import { DebtEditForm } from "./edit-form";
 import { ArrowLeft } from "lucide-react";
 
-export default async function DebtDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function DebtDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const debts = await getDebts();
   const debt = debts.find((d) => d._id === id);

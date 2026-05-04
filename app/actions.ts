@@ -1,8 +1,5 @@
 "use server";
 
-import dns from "dns";
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
-
 import clientPromise from "@/lib/mongodb";
 import { BankDebt } from "@/types/bank-debt";
 import { ObjectId } from "mongodb";

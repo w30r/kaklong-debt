@@ -1,3 +1,9 @@
+export interface Payment {
+  amount: number;
+  date: string;
+  _id?: string;
+}
+
 export interface BankDebt {
   _id: string;
   bank: string;
@@ -8,6 +14,7 @@ export interface BankDebt {
   interestRate: number;
   nextPaymentDate: string;
   status: "up-to-date" | "late" | "paid-off";
+  payments?: Payment[];
   createdAt?: string;
   updatedAt?: string;
 }

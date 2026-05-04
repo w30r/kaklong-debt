@@ -15,7 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowUpDown, ArrowUp, ArrowDown, Trash, Check } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Trash, Check, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface DebtTableProps {
   debts: BankDebt[];
@@ -26,8 +27,9 @@ type SortDir = "asc" | "desc";
 
 export function DebtTable({ debts }: DebtTableProps) {
   const router = useRouter();
-  const [sortKey, setSortKey] = useState<SortKey>("bank");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [sortKey, setSortKey] = useState<SortKey>("outstanding");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [search, setSearch] = useState("");
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -38,7 +40,16 @@ export function DebtTable({ debts }: DebtTableProps) {
     }
   };
 
-  const sorted = [...debts].sort((a, b) => {
+  const filtered = debts.filter((debt) => {
+    const term = search.toLowerCase();
+    return (
+      debt.bank.toLowerCase().includes(term) ||
+      debt.type.toLowerCase().includes(term) ||
+      debt.status.toLowerCase().includes(term)
+    );
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
     const aVal = a[sortKey];
     const bVal = b[sortKey];
     if (typeof aVal === "number" && typeof bVal === "number") {
@@ -88,6 +99,17 @@ export function DebtTable({ debts }: DebtTableProps) {
 
   return (
     <>
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by bank, type, or status..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </div>
       <div className="hidden sm:block">
         <Card>
           <CardContent className="p-0">

@@ -1,7 +1,7 @@
 "use server";
 
 import clientPromise from "@/lib/mongodb";
-import { BankDebt } from "@/types/bank-debt";
+import { BankDebt, Payment } from "@/types/bank-debt";
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 
@@ -15,7 +15,7 @@ export async function getDebts(): Promise<BankDebt[]> {
     const debts = await db
       .collection(COLLECTION_NAME)
       .find({})
-      .sort({ createdAt: -1 })
+      .sort({ outstanding: -1 })
       .toArray();
 
     return debts.map((debt) => ({
@@ -129,6 +129,96 @@ export async function markAsPaidOff(
   } catch (error) {
     console.error("Failed to mark debt as paid off:", error);
     return { success: false, error: "Failed to update debt" };
+  }
+}
+
+export async function recordPayment(
+  id: string,
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    const amount = parseFloat(formData.get("amount") as string);
+    const date = formData.get("date") as string;
+
+    if (isNaN(amount) || amount <= 0) {
+      return { success: false, error: "Valid payment amount is required" };
+    }
+
+    const debt = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
+    if (!debt) {
+      return { success: false, error: "Debt not found" };
+    }
+
+    const payment = {
+      amount,
+      date: date || new Date().toISOString().split("T")[0],
+    };
+
+    const payments = [...(debt.payments || []), payment];
+    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+    const outstanding = Math.max(0, debt.totalAmount - totalPaid);
+    const status = outstanding === 0 ? ("paid-off" as const) : debt.status;
+
+    await (db.collection(COLLECTION_NAME) as any).updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $push: { payments: payment },
+        $set: {
+          outstanding,
+          status,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    );
+
+    revalidatePath("/");
+    revalidatePath(`/debt/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to record payment:", error);
+    return { success: false, error: "Failed to record payment" };
+  }
+}
+
+export async function deletePayment(
+  debtId: string,
+  paymentDate: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    const debt = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(debtId) });
+    if (!debt) {
+      return { success: false, error: "Debt not found" };
+    }
+
+    const payments = (debt.payments || []).filter((p: Payment) => p.date !== paymentDate);
+    const totalPaid = payments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
+    const outstanding = Math.max(0, debt.totalAmount - totalPaid);
+    const status = outstanding === 0 ? ("paid-off" as const) : debt.status;
+
+    await (db.collection(COLLECTION_NAME) as any).updateOne(
+      { _id: new ObjectId(debtId) },
+      {
+        $set: {
+          payments,
+          outstanding,
+          status,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    );
+
+    revalidatePath("/");
+    revalidatePath(`/debt/${debtId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete payment:", error);
+    return { success: false, error: "Failed to delete payment" };
   }
 }
 

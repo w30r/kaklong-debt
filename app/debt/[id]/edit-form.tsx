@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { BankDebt } from "@/types/bank-debt";
-import { updateDebt, markAsPaidOff, deleteDebt } from "@/app/actions";
+import { BankDebt, Payment } from "@/types/bank-debt";
+import { updateDebt, markAsPaidOff, deleteDebt, recordPayment, deletePayment } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Loader2, Plus, X } from "lucide-react";
 
 interface DebtEditFormProps {
   debt: BankDebt;
@@ -42,12 +42,18 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [deletingPayment, setDeletingPayment] = useState<string | null>(null);
+  const [paymentForm, setPaymentForm] = useState({
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+  });
 
   const [form, setForm] = useState({
     bank: debt.bank,
     type: debt.type,
     totalAmount: debt.totalAmount.toString(),
-    outstanding: debt.outstanding.toString(),
     monthlyPayment: debt.monthlyPayment.toString(),
     interestRate: debt.interestRate.toString(),
     nextPaymentDate: debt.nextPaymentDate === "—" ? "" : debt.nextPaymentDate,
@@ -60,7 +66,6 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
     fd.set("bank", form.bank);
     fd.set("type", form.type);
     fd.set("totalAmount", form.totalAmount);
-    fd.set("outstanding", form.outstanding);
     fd.set("monthlyPayment", form.monthlyPayment);
     fd.set("interestRate", form.interestRate);
     fd.set("nextPaymentDate", form.nextPaymentDate || "—");
@@ -76,13 +81,36 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
       bank: debt.bank,
       type: debt.type,
       totalAmount: debt.totalAmount.toString(),
-      outstanding: debt.outstanding.toString(),
       monthlyPayment: debt.monthlyPayment.toString(),
       interestRate: debt.interestRate.toString(),
       nextPaymentDate: debt.nextPaymentDate === "—" ? "" : debt.nextPaymentDate,
       status: debt.status,
     });
     setEditing(false);
+  };
+
+  const handleRecordPayment = async () => {
+    if (!paymentForm.amount || parseFloat(paymentForm.amount) <= 0) return;
+
+    setRecording(true);
+    const fd = new FormData();
+    fd.set("amount", paymentForm.amount);
+    fd.set("date", paymentForm.date);
+    await recordPayment(debt._id, fd);
+    setRecording(false);
+    setShowPaymentForm(false);
+    setPaymentForm({
+      amount: "",
+      date: new Date().toISOString().split("T")[0],
+    });
+    router.refresh();
+  };
+
+  const handleDeletePayment = async (paymentDate: string) => {
+    setDeletingPayment(paymentDate);
+    await deletePayment(debt._id, paymentDate);
+    setDeletingPayment(null);
+    router.refresh();
   };
 
   const handlePaidOff = async () => {
@@ -110,6 +138,8 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
   const paidAmount = debt.totalAmount - debt.outstanding;
   const progress =
     debt.totalAmount > 0 ? (paidAmount / debt.totalAmount) * 100 : 0;
+
+  const payments = debt.payments || [];
 
   if (editing) {
     return (
@@ -156,16 +186,14 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                 }
               />
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="outstanding">Outstanding</Label>
-              <Input
-                id="outstanding"
-                type="number"
-                value={form.outstanding}
-                onChange={(e) =>
-                  setForm({ ...form, outstanding: e.target.value })
-                }
-              />
+            <div className="flex flex-col gap-2 sm:col-span-2">
+              <Label>Outstanding</Label>
+              <div className="text-lg font-medium">
+                RM {debt.outstanding.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Record payments below to update the outstanding balance
+              </p>
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="monthlyPayment">Monthly Payment</Label>
@@ -331,6 +359,104 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
           </div>
         </CardContent>
       </Card>
+
+      {debt.status !== "paid-off" && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Record Payment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {showPaymentForm ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="paymentAmount">Payment Amount (RM)</Label>
+                    <Input
+                      id="paymentAmount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={paymentForm.amount}
+                      onChange={(e) =>
+                        setPaymentForm({ ...paymentForm, amount: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="paymentDate">Payment Date</Label>
+                    <Input
+                      id="paymentDate"
+                      type="date"
+                      value={paymentForm.date}
+                      onChange={(e) =>
+                        setPaymentForm({ ...paymentForm, date: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleRecordPayment} disabled={recording}>
+                    {recording ? <Loader2 className="size-4 animate-spin" /> : null}
+                    Record Payment
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPaymentForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button onClick={() => setShowPaymentForm(true)}>
+                <Plus className="size-4 mr-2" />
+                Add Payment
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {payments.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Payment History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-0">
+              {payments.map((payment: Payment, i: number) => (
+                <div
+                  key={i}
+                  className={`flex items-center justify-between py-3 ${i < payments.length - 1 ? "border-b border-border" : ""}`}
+                >
+                  <span className="text-muted-foreground">
+                    {new Date(payment.date).toLocaleDateString("en-MY")}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">
+                      RM {payment.amount.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
+                    </span>
+                    {debt.status !== "paid-off" && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleDeletePayment(payment.date)}
+                        disabled={deletingPayment === payment.date}
+                      >
+                        {deletingPayment === payment.date ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <X className="size-4 text-muted-foreground hover:text-destructive" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex gap-2">
         {debt.status !== "paid-off" && (

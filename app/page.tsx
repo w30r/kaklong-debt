@@ -2,9 +2,6 @@ import { getDebts } from "./actions";
 import { DebtForm } from "./debt-form";
 import { DebtTable } from "./debt-table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { logout } from "./auth-actions";
-import { LogOut } from "lucide-react";
 
 export default async function Home() {
   const debts = await getDebts();
@@ -39,19 +36,11 @@ export default async function Home() {
   return (
     <div className="flex flex-col flex-1 bg-background font-sans">
       <div className="max-w-6xl mx-auto w-full px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">
-            My Debt Dashboard
-          </h1>
-          <form action={logout}>
-            <Button variant="ghost" size="sm">
-              <LogOut className="size-4 mr-1.5" />
-              Logout
-            </Button>
-          </form>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Debt Tracker</h1>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 font-mono">
           {stats.map((stat) => (
             <Card key={stat.label}>
               <CardContent className="p-5">

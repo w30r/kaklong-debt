@@ -2,6 +2,7 @@
 
 import clientPromise from "@/lib/mongodb";
 import { BankDebt, Payment } from "@/types/bank-debt";
+import { SalaryEntry } from "@/types/salary";
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 
@@ -236,5 +237,78 @@ export async function deleteDebt(
   } catch (error) {
     console.error("Failed to delete debt:", error);
     return { success: false, error: "Failed to delete debt" };
+  }
+}
+
+const SALARY_COLLECTION = "salary";
+
+export async function getSalaryEntries(): Promise<SalaryEntry[]> {
+  try {
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+    const entries = await db
+      .collection(SALARY_COLLECTION)
+      .find({})
+      .sort({ date: -1 })
+      .toArray();
+
+    return entries.map((entry) => ({
+      ...entry,
+      _id: entry._id.toString(),
+    })) as SalaryEntry[];
+  } catch (error) {
+    console.error("Failed to fetch salary entries:", error);
+    return [];
+  }
+}
+
+export async function addSalaryEntry(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const amount = parseFloat(formData.get("amount") as string);
+    const description = formData.get("description") as string;
+    const date = formData.get("date") as string;
+
+    if (isNaN(amount) || !description) {
+      return { success: false, error: "Amount and description are required" };
+    }
+
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    const entry: Omit<SalaryEntry, "_id"> = {
+      amount,
+      description,
+      date: date || new Date().toISOString().split("T")[0],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await db.collection(SALARY_COLLECTION).insertOne(entry);
+    revalidatePath("/salary");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to add salary entry:", error);
+    return { success: false, error: "Failed to add entry" };
+  }
+}
+
+export async function deleteSalaryEntry(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    await db
+      .collection(SALARY_COLLECTION)
+      .deleteOne({ _id: new ObjectId(id) });
+
+    revalidatePath("/salary");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete salary entry:", error);
+    return { success: false, error: "Failed to delete entry" };
   }
 }

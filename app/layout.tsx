@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark h-full antialiased">
-      <body className="min-h-full flex">
+      <body className="min-h-full flex mt-24">
         <Sidebar />
         {children}
       </body>

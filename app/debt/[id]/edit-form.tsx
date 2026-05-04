@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { BankDebt, Payment } from "@/types/bank-debt";
-import { updateDebt, markAsPaidOff, deleteDebt, recordPayment, deletePayment } from "@/app/actions";
+import {
+  updateDebt,
+  markAsPaidOff,
+  deleteDebt,
+  recordPayment,
+  deletePayment,
+} from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -189,7 +195,10 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
             <div className="flex flex-col gap-2 sm:col-span-2">
               <Label>Outstanding</Label>
               <div className="text-lg font-medium">
-                RM {debt.outstanding.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
+                RM{" "}
+                {debt.outstanding.toLocaleString("en-MY", {
+                  minimumFractionDigits: 2,
+                })}
               </div>
               <p className="text-sm text-muted-foreground">
                 Record payments below to update the outstanding balance
@@ -332,7 +341,12 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                 value: `RM ${debt.monthlyPayment.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`,
               },
               { label: "Interest Rate", value: `${debt.interestRate}%` },
-              { label: "Next Payment", value: debt.nextPaymentDate },
+              {
+                label: "Next Payment",
+                value: debt.nextPaymentDate
+                  ? new Date(debt.nextPaymentDate).toLocaleDateString("en-MY")
+                  : "-",
+              },
               debt.createdAt
                 ? {
                     label: "Created",
@@ -378,7 +392,10 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                       placeholder="0.00"
                       value={paymentForm.amount}
                       onChange={(e) =>
-                        setPaymentForm({ ...paymentForm, amount: e.target.value })
+                        setPaymentForm({
+                          ...paymentForm,
+                          amount: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -396,7 +413,9 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={handleRecordPayment} disabled={recording}>
-                    {recording ? <Loader2 className="size-4 animate-spin" /> : null}
+                    {recording ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : null}
                     Record Payment
                   </Button>
                   <Button
@@ -434,7 +453,10 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="font-medium">
-                      RM {payment.amount.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
+                      RM{" "}
+                      {payment.amount.toLocaleString("en-MY", {
+                        minimumFractionDigits: 2,
+                      })}
                     </span>
                     {debt.status !== "paid-off" && (
                       <Button

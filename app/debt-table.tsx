@@ -82,11 +82,23 @@ export function DebtTable({ debts }: DebtTableProps) {
   const formatCurrency = (val: number) =>
     `RM ${val.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`;
 
+  const formatDate = (dateStr: string) => {
+    if (dateStr === "—") return "—";
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = date.toLocaleString("en-MY", { month: "short" });
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
   const statusVariant = (status: BankDebt["status"]) => {
     switch (status) {
       case "paid-off":
         return "default";
       case "late":
+        return "destructive";
+      case "pending":
         return "destructive";
       default:
         return "secondary";
@@ -103,6 +115,17 @@ export function DebtTable({ debts }: DebtTableProps) {
     { key: "nextPaymentDate", label: "Next Payment" },
     { key: "status", label: "Status" },
   ];
+
+  // Your existing type (or similar)
+  type DebtStatus = "up-to-date" | "late" | "paid-off" | "pending";
+
+  // The Type-Safe Mapping Object
+  const statusLabels: Record<DebtStatus, string> = {
+    "up-to-date": "Up-to-Date",
+    late: "Late Payment",
+    pending: "Late Payment",
+    "paid-off": "Paid Off",
+  };
 
   return (
     <>
@@ -162,11 +185,11 @@ export function DebtTable({ debts }: DebtTableProps) {
                       {debt.interestRate}%
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {debt.nextPaymentDate}
+                      {formatDate(debt.nextPaymentDate)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(debt.status)}>
-                        {debt.status}
+                        {statusLabels[debt.status]}
                       </Badge>
                     </TableCell>
                     <TableCell
@@ -228,7 +251,7 @@ export function DebtTable({ debts }: DebtTableProps) {
                   <p className="text-sm text-muted-foreground">{debt.type}</p>
                 </div>
                 <Badge variant={statusVariant(debt.status)}>
-                  {debt.status}
+                  {statusLabels[debt.status]}
                 </Badge>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -250,7 +273,9 @@ export function DebtTable({ debts }: DebtTableProps) {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Next Payment</p>
-                  <p className="text-foreground">{debt.nextPaymentDate}</p>
+                  <p className="text-foreground">
+                    {formatDate(debt.nextPaymentDate)}
+                  </p>
                 </div>
               </div>
               <div

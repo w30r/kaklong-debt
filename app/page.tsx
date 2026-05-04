@@ -34,7 +34,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col flex-1 bg-background font-sans">
-      <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight pl-10 sm:pl-0">
             Debt Tracker

@@ -13,7 +13,7 @@ export interface BankDebt {
   monthlyPayment: number;
   interestRate: number;
   nextPaymentDate: string;
-  status: "up-to-date" | "late" | "paid-off";
+  status: "up-to-date" | "late" | "paid-off" | "pending";
   payments?: Payment[];
   createdAt?: string;
   updatedAt?: string;

@@ -34,22 +34,22 @@ export default async function SalaryPage() {
 
   return (
     <div className="flex flex-col flex-1 bg-background font-sans">
-      <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8 pl-10 sm:pl-0">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Salary Tracker
           </h1>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8 font-mono">
+        <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 mb-6 sm:mb-8 font-mono">
           {stats.map((stat) => (
-            <Card key={stat.label}>
-              <CardContent className="p-3 sm:p-5">
-                <p className="text-xs sm:text-sm text-muted-foreground">
+            <Card key={stat.label} className={stat.label === 'Net Balance' ? 'col-span-3 sm:col-span-1' : ''}>
+              <CardContent className="p-2 sm:p-5">
+                <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">
                   {stat.label}
                 </p>
                 <p
-                  className={`text-lg sm:text-2xl font-semibold mt-1 ${
+                  className={`text-sm sm:text-2xl font-semibold mt-0.5 sm:mt-1 truncate ${
                     stat.danger
                       ? "text-destructive"
                       : stat.accent

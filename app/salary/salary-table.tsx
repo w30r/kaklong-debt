@@ -86,7 +86,7 @@ export function SalaryTable({ entries }: SalaryTableProps) {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Search by description..."
+            placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -96,12 +96,12 @@ export function SalaryTable({ entries }: SalaryTableProps) {
 
       {sortedMonths.length === 0 ? (
         <Card>
-          <CardContent className="h-24 flex items-center justify-center text-muted-foreground">
+          <CardContent className="h-24 flex items-center justify-center text-muted-foreground text-sm">
             No entries yet. Add one to get started.
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {sortedMonths.map((month) => {
             const monthEntries = groupedByMonth[month];
             const total = monthEntries.reduce((sum, e) => sum + e.amount, 0);
@@ -110,56 +110,41 @@ export function SalaryTable({ entries }: SalaryTableProps) {
             return (
               <Card key={month}>
                 <CardContent className="p-0">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
-                    <span className="font-semibold">{monthLabel}</span>
+                  <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-border bg-muted/30">
+                    <span className="font-semibold text-sm sm:text-base">{monthLabel}</span>
                     <span
-                      className={`font-bold ${total >= 0 ? "text-chart-3" : "text-destructive"}`}
+                      className={`font-bold text-sm sm:text-base ${total >= 0 ? "text-chart-3" : "text-destructive"}`}
                     >
                       {total >= 0 ? "+" : ""}RM {formatCurrency(total)}
                     </span>
                   </div>
-                  <Table>
+                  <Table className="hidden sm:table">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-32">Date</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead className="w-20"></TableHead>
+                        <TableHead className="w-24 text-sm">Date</TableHead>
+                        <TableHead className="text-sm">Description</TableHead>
+                        <TableHead className="text-right text-sm">Amount</TableHead>
+                        <TableHead className="w-16"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {monthEntries.map((entry) => (
                         <TableRow key={entry._id}>
-                          <TableCell className="text-muted-foreground">
+                          <TableCell className="text-muted-foreground text-sm">
                             {new Date(entry.date).toLocaleDateString("en-MY", {
                               day: "numeric",
                               month: "short",
                             })}
                           </TableCell>
-                          <TableCell>
-                            {truncate(entry.description, 40)}
-                          </TableCell>
-                          <TableCell
-                            className={`text-right font-medium tabular-nums ${
-                              entry.amount >= 0
-                                ? "text-chart-3"
-                                : "text-destructive"
-                            }`}
-                          >
-                            {entry.amount >= 0 ? "+" : ""}RM{" "}
-                            {formatCurrency(entry.amount)}
+                          <TableCell className="text-sm">{truncate(entry.description, 40)}</TableCell>
+                          <TableCell className={`text-right font-medium tabular-nums text-sm ${
+                            entry.amount >= 0 ? "text-chart-3" : "text-destructive"
+                          }`}>
+                            {entry.amount >= 0 ? "+" : ""}RM {formatCurrency(entry.amount)}
                           </TableCell>
                           <TableCell>
-                            <form
-                              action={async () => {
-                                await handleDelete(entry._id);
-                              }}
-                            >
-                              <Button
-                                type="submit"
-                                variant="ghost"
-                                size="icon-sm"
-                              >
+                            <form action={async () => { await handleDelete(entry._id); }}>
+                              <Button type="submit" variant="ghost" size="icon-sm">
                                 <Trash className="size-4 text-muted-foreground hover:text-destructive" />
                               </Button>
                             </form>
@@ -168,6 +153,36 @@ export function SalaryTable({ entries }: SalaryTableProps) {
                       ))}
                     </TableBody>
                   </Table>
+                  <div className="sm:hidden">
+                    {monthEntries.map((entry) => (
+                      <div
+                        key={entry._id}
+                        className="flex items-center justify-between p-3 border-b border-border last:border-0"
+                      >
+                        <div className="flex-1">
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(entry.date).toLocaleDateString("en-MY", {
+                              day: "numeric",
+                              month: "short",
+                            })}
+                          </div>
+                          <div className="text-sm">{truncate(entry.description, 20)}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-medium text-sm tabular-nums ${
+                            entry.amount >= 0 ? "text-chart-3" : "text-destructive"
+                          }`}>
+                            {entry.amount >= 0 ? "+" : ""}RM {formatCurrency(entry.amount)}
+                          </span>
+                          <form action={async () => { await handleDelete(entry._id); }}>
+                            <Button type="submit" variant="ghost" size="icon-sm" className="size-7">
+                              <Trash className="size-3 text-muted-foreground hover:text-destructive" />
+                            </Button>
+                          </form>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             );

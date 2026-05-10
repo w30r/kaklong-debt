@@ -14,8 +14,16 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trash, Search } from "lucide-react";
+import { Trash, Trash2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SalaryTableProps {
   entries: SalaryEntry[];
@@ -28,6 +36,7 @@ const truncate = (str: string, n: number) => {
 export function SalaryTable({ entries }: SalaryTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [selectedEntry, setSelectedEntry] = useState<SalaryEntry | null>(null);
 
   const filtered = entries.filter((entry) => {
     const term = search.toLowerCase();
@@ -36,6 +45,7 @@ export function SalaryTable({ entries }: SalaryTableProps) {
 
   const handleDelete = async (id: string) => {
     await deleteSalaryEntry(id);
+    setSelectedEntry(null);
     router.refresh();
   };
 
@@ -129,7 +139,11 @@ export function SalaryTable({ entries }: SalaryTableProps) {
                     </TableHeader>
                     <TableBody>
                       {monthEntries.map((entry) => (
-                        <TableRow key={entry._id}>
+                        <TableRow
+                          key={entry._id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setSelectedEntry(entry)}
+                        >
                           <TableCell className="text-muted-foreground text-sm">
                             {new Date(entry.date).toLocaleDateString("en-MY", {
                               day: "numeric",
@@ -143,7 +157,7 @@ export function SalaryTable({ entries }: SalaryTableProps) {
                             {entry.amount >= 0 ? "+" : ""}RM {formatCurrency(entry.amount)}
                           </TableCell>
                           <TableCell>
-                            <form action={async () => { await handleDelete(entry._id); }}>
+                            <form action={async () => { await handleDelete(entry._id); }} onClick={(e) => e.stopPropagation()}>
                               <Button type="submit" variant="ghost" size="icon-sm">
                                 <Trash className="size-4 text-muted-foreground hover:text-destructive" />
                               </Button>
@@ -157,7 +171,8 @@ export function SalaryTable({ entries }: SalaryTableProps) {
                     {monthEntries.map((entry) => (
                       <div
                         key={entry._id}
-                        className="flex items-center justify-between p-3 border-b border-border last:border-0"
+                        className="flex items-center justify-between p-3 border-b border-border last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setSelectedEntry(entry)}
                       >
                         <div className="flex-1">
                           <div className="text-xs text-muted-foreground">
@@ -174,7 +189,7 @@ export function SalaryTable({ entries }: SalaryTableProps) {
                           }`}>
                             {entry.amount >= 0 ? "+" : ""}RM {formatCurrency(entry.amount)}
                           </span>
-                          <form action={async () => { await handleDelete(entry._id); }}>
+                          <form action={async () => { await handleDelete(entry._id); }} onClick={(e) => e.stopPropagation()}>
                             <Button type="submit" variant="ghost" size="icon-sm" className="size-7">
                               <Trash className="size-3 text-muted-foreground hover:text-destructive" />
                             </Button>
@@ -189,6 +204,56 @@ export function SalaryTable({ entries }: SalaryTableProps) {
           })}
         </div>
       )}
+
+      <Dialog open={!!selectedEntry} onOpenChange={() => setSelectedEntry(null)}>
+        {selectedEntry && (
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Salary Entry Details</DialogTitle>
+              <DialogDescription>
+                {new Date(selectedEntry.date).toLocaleDateString("en-MY", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground text-sm">Description</span>
+                <span className="text-sm font-medium">{selectedEntry.description}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground text-sm">Amount</span>
+                <span
+                  className={`text-sm font-semibold ${
+                    selectedEntry.amount >= 0 ? "text-chart-3" : "text-destructive"
+                  }`}
+                >
+                  RM {formatCurrency(selectedEntry.amount)}
+                </span>
+              </div>
+            </div>
+            <DialogFooter>
+              <form
+                action={async () => {
+                  await handleDelete(selectedEntry._id);
+                }}
+              >
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                >
+                  <Trash2 className="size-4 mr-2" />
+                  Delete Entry
+                </Button>
+              </form>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
     </>
   );
 }

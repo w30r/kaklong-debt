@@ -71,7 +71,6 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
     const fd = new FormData();
     fd.set("bank", form.bank);
     fd.set("type", form.type);
-    fd.set("totalAmount", form.totalAmount);
     fd.set("monthlyPayment", form.monthlyPayment);
     fd.set("interestRate", form.interestRate);
     fd.set("nextPaymentDate", form.nextPaymentDate || "—");
@@ -141,11 +140,11 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
     }
   };
 
+  const payments = debt.payments || [];
+
   const paidAmount = debt.totalAmount - debt.outstanding;
   const progress =
     debt.totalAmount > 0 ? (paidAmount / debt.totalAmount) * 100 : 0;
-
-  const payments = debt.payments || [];
 
   if (editing) {
     return (
@@ -187,10 +186,12 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                 id="totalAmount"
                 type="number"
                 value={form.totalAmount}
-                onChange={(e) =>
-                  setForm({ ...form, totalAmount: e.target.value })
-                }
+                readOnly
+                className="bg-muted"
               />
+              <p className="text-xs text-muted-foreground">
+                This value is calculated from recorded payments and cannot be changed.
+              </p>
             </div>
             <div className="flex flex-col gap-2 sm:col-span-2">
               <Label>Outstanding</Label>
@@ -297,19 +298,65 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+        <Card className="bg-destructive/5 border-destructive/20">
+          <CardContent className="pt-4 sm:pt-6">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-1 uppercase tracking-wider font-medium">
+              Outstanding
+            </p>
+            <p className="text-xl sm:text-2xl font-bold text-destructive tabular-nums">
+              RM{" "}
+              {debt.outstanding.toLocaleString("en-MY", {
+                minimumFractionDigits: 2,
+              })}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="pt-4 sm:pt-6">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-1 uppercase tracking-wider font-medium">
+              Monthly
+            </p>
+            <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">
+              RM{" "}
+              {debt.monthlyPayment.toLocaleString("en-MY", {
+                minimumFractionDigits: 2,
+              })}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/30">
+          <CardContent className="pt-4 sm:pt-6">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-1 uppercase tracking-wider font-medium">
+              Next Date
+            </p>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums">
+              {debt.nextPaymentDate && debt.nextPaymentDate !== "—"
+                ? new Date(debt.nextPaymentDate).toLocaleDateString("en-MY", {
+                    day: "2-digit",
+                    month: "short",
+                  })
+                : "—"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="mb-6">
         <CardHeader className="pb-2">
-          <CardTitle>Progress</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Pay-off Progress
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+            <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full bg-primary transition-all rounded-full"
+                className="h-full bg-chart-3 transition-all rounded-full"
                 style={{ width: `${Math.min(progress, 100)}%` }}
               />
             </div>
-            <span className="text-sm text-muted-foreground tabular-nums">
+            <span className="text-sm font-bold text-chart-3 tabular-nums">
               {progress.toFixed(1)}%
             </span>
           </div>
@@ -318,32 +365,24 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Details</CardTitle>
+          <CardTitle>Additional Details</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-0">
             {[
               {
-                label: "Total Amount",
+                label: "Original Total Amount",
                 value: `RM ${debt.totalAmount.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`,
               },
               {
-                label: "Outstanding",
-                value: `RM ${debt.outstanding.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`,
-              },
-              {
-                label: "Amount Paid",
+                label: "Total Amount Paid",
                 value: `RM ${paidAmount.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`,
                 highlight: true,
               },
-              {
-                label: "Monthly Payment",
-                value: `RM ${debt.monthlyPayment.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`,
-              },
               { label: "Interest Rate", value: `${debt.interestRate}%` },
               {
-                label: "Next Payment",
-                value: debt.nextPaymentDate
+                label: "Next Payment (Full Date)",
+                value: debt.nextPaymentDate && debt.nextPaymentDate !== "—"
                   ? new Date(debt.nextPaymentDate).toLocaleDateString("en-MY")
                   : "-",
               },
@@ -449,7 +488,12 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                   className={`flex items-center justify-between py-3 ${i < payments.length - 1 ? "border-b border-border" : ""}`}
                 >
                   <span className="text-muted-foreground">
-                    {new Date(payment.date).toLocaleDateString("en-MY")}
+                    {new Date(payment.date).toLocaleDateString("en-MY", {
+                      weekday: "short",
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })}
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="font-medium">

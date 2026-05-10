@@ -84,8 +84,6 @@ export async function updateDebt(
     const updateData: Partial<BankDebt> = {
       bank: formData.get("bank") as string,
       type: formData.get("type") as string,
-      totalAmount: parseFloat(formData.get("totalAmount") as string) || 0,
-      outstanding: parseFloat(formData.get("outstanding") as string) || 0,
       monthlyPayment: parseFloat(formData.get("monthlyPayment") as string) || 0,
       interestRate: parseFloat(formData.get("interestRate") as string) || 0,
       nextPaymentDate: formData.get("nextPaymentDate") as string,
@@ -158,9 +156,7 @@ export async function recordPayment(
       date: date || new Date().toISOString().split("T")[0],
     };
 
-    const payments = [...(debt.payments || []), payment];
-    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-    const outstanding = Math.max(0, debt.totalAmount - totalPaid);
+    const outstanding = Math.max(0, debt.outstanding - amount);
     const status = outstanding === 0 ? ("paid-off" as const) : debt.status;
 
     await (db.collection(COLLECTION_NAME) as any).updateOne(

@@ -34,7 +34,7 @@ type SortDir = "asc" | "desc";
 
 export function DebtTable({ debts }: DebtTableProps) {
   const router = useRouter();
-  const [sortKey, setSortKey] = useState<SortKey>("outstanding");
+  const [sortKey, setSortKey] = useState<SortKey>("totalAmount");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [search, setSearch] = useState("");
 

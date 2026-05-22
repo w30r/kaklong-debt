@@ -6,10 +6,18 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export function SalaryForm() {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     amount: "",
@@ -32,50 +40,54 @@ export function SalaryForm() {
       description: "",
       date: new Date().toISOString().split("T")[0],
     });
+    setOpen(false);
     router.refresh();
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3 sm:pb-4">
-        <CardTitle className="text-lg">Add Entry</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:gap-4">
-        <div className="flex flex-col gap-1 sm:gap-2">
-          <Label htmlFor="amount">Amount (RM)</Label>
-          <Input
-            id="amount"
-            type="number"
-            step="0.01"
-            placeholder="0.00"
-            value={form.amount}
-            onChange={(e) => setForm({ ...form, amount: e.target.value })}
-          />
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button><Plus className="size-4 mr-1.5" />Add Entry</Button>} />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Entry</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="amount">Amount (RM)</Label>
+            <Input
+              id="amount"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="description">Description</Label>
+            <Input
+              id="description"
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+            />
+          </div>
         </div>
-        <div className="flex flex-col gap-1 sm:gap-2 sm:col-span-2">
-          <Label htmlFor="description">Description</Label>
-          <Input
-            id="description"
-            placeholder="Description"
-            value={form.description}
-            onChange={(e) =>
-              setForm({ ...form, description: e.target.value })
-            }
-          />
-        </div>
-        <div className="flex flex-col gap-1 sm:gap-2">
-          <Label htmlFor="date">Date</Label>
-          <Input
-            id="date"
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
-          />
-        </div>
-        <Button onClick={handleSubmit} disabled={saving} className="mt-2 sm:mt-4 w-full sm:w-auto sm:self-end">
+        <Button onClick={handleSubmit} disabled={saving} className="w-full">
           {saving ? "Adding..." : "Add"}
         </Button>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

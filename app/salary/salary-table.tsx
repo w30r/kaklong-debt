@@ -115,18 +115,33 @@ export function SalaryTable({ entries }: SalaryTableProps) {
           {sortedMonths.map((month) => {
             const monthEntries = groupedByMonth[month];
             const total = monthEntries.reduce((sum, e) => sum + e.amount, 0);
+            const monthIncome = monthEntries.filter((e) => e.amount > 0).reduce((sum, e) => sum + e.amount, 0);
+            const monthExpense = monthEntries.filter((e) => e.amount < 0).reduce((sum, e) => sum + e.amount, 0);
             const monthLabel = monthLabels[month] || month;
 
             return (
               <Card key={month}>
                 <CardContent className="p-0">
-                  <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-border bg-muted/30">
-                    <span className="font-semibold text-sm sm:text-base">{monthLabel}</span>
-                    <span
-                      className={`font-bold text-sm sm:text-base ${total >= 0 ? "text-chart-3" : "text-destructive"}`}
-                    >
-                      {total >= 0 ? "+" : ""}RM {formatCurrency(total)}
-                    </span>
+                  <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-border bg-muted/30">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-semibold text-sm sm:text-base">{monthLabel}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 font-mono text-xs sm:text-sm">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground">Income</span>
+                        <span className="font-medium text-chart-3">+RM {formatCurrency(monthIncome)}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground">Expenses</span>
+                        <span className="font-medium text-destructive">-RM {formatCurrency(Math.abs(monthExpense))}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground">Net</span>
+                        <span className={`font-semibold ${total >= 0 ? "text-chart-3" : "text-destructive"}`}>
+                          RM {formatCurrency(total)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <Table className="hidden sm:table">
                     <TableHeader>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { addDebt } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
@@ -31,27 +31,15 @@ export function DebtForm() {
                 </div>
                 <div className="flex flex-col gap-1 sm:gap-2">
                   <Label htmlFor="type">Loan Type</Label>
-                  <Select name="type" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Car Loan">Car Loan</SelectItem>
-                      <SelectItem value="Home Loan">Home Loan</SelectItem>
-                      <SelectItem value="Personal Loan">Personal Loan</SelectItem>
-                      <SelectItem value="Credit Card">Credit Card</SelectItem>
-                      <SelectItem value="Education Loan">Education Loan</SelectItem>
-                      <SelectItem value="Business Loan">Business Loan</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input id="type" name="type" placeholder="e.g. Car Loan" required />
                 </div>
                 <div className="flex flex-col gap-1 sm:gap-2">
                   <Label htmlFor="totalAmount">Total Amount</Label>
-                  <Input id="totalAmount" name="totalAmount" type="number" placeholder="0.00" />
+                  <Input id="totalAmount" name="totalAmount" type="number" placeholder="0.00" required />
                 </div>
                 <div className="flex flex-col gap-1 sm:gap-2">
-                  <Label htmlFor="outstanding">Outstanding</Label>
-                  <Input id="outstanding" name="outstanding" type="number" placeholder="0.00" required />
+                  <Label htmlFor="remaining">Remaining</Label>
+                  <Input id="remaining" name="remaining" type="number" placeholder="0.00" required />
                 </div>
                 <div className="flex flex-col gap-1 sm:gap-2">
                   <Label htmlFor="monthlyPayment">Monthly Payment</Label>

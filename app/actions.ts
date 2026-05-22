@@ -16,7 +16,7 @@ export async function getDebts(): Promise<BankDebt[]> {
     const debts = await db
       .collection(COLLECTION_NAME)
       .find({})
-      .sort({ outstanding: -1 })
+      .sort({ remaining: -1 })
       .toArray();
 
     return debts.map((debt) => ({
@@ -36,15 +36,15 @@ export async function addDebt(
     const bank = formData.get("bank") as string;
     const type = formData.get("type") as string;
     const totalAmount = parseFloat(formData.get("totalAmount") as string);
-    const outstanding = parseFloat(formData.get("outstanding") as string);
+    const remaining = parseFloat(formData.get("remaining") as string);
     const monthlyPayment = parseFloat(formData.get("monthlyPayment") as string);
     const interestRate = parseFloat(formData.get("interestRate") as string);
     const nextPaymentDate = formData.get("nextPaymentDate") as string;
 
-    if (!bank || !type || isNaN(outstanding)) {
+    if (!bank || !type || isNaN(remaining)) {
       return {
         success: false,
-        error: "Bank, type, and outstanding amount are required",
+        error: "Bank, type, and remaining amount are required",
       };
     }
 
@@ -55,7 +55,7 @@ export async function addDebt(
       bank,
       type,
       totalAmount: isNaN(totalAmount) ? 0 : totalAmount,
-      outstanding,
+      remaining,
       monthlyPayment: isNaN(monthlyPayment) ? 0 : monthlyPayment,
       interestRate: isNaN(interestRate) ? 0 : interestRate,
       nextPaymentDate,
@@ -81,6 +81,9 @@ export async function updateDebt(
     const client = await clientPromise;
     const db = client.db(DB_NAME);
 
+    const newTotal = parseFloat(formData.get("totalAmount") as string);
+    const debt = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
+
     const updateData: Partial<BankDebt> = {
       bank: formData.get("bank") as string,
       type: formData.get("type") as string,
@@ -90,6 +93,12 @@ export async function updateDebt(
       status: formData.get("status") as BankDebt["status"],
       updatedAt: new Date().toISOString(),
     };
+
+    if (!isNaN(newTotal) && debt) {
+      const paidAmount = debt.totalAmount - debt.remaining;
+      updateData.totalAmount = newTotal;
+      updateData.remaining = Math.max(0, newTotal - paidAmount);
+    }
 
     await db
       .collection(COLLECTION_NAME)
@@ -114,7 +123,7 @@ export async function markAsPaidOff(
       { _id: new ObjectId(id) },
       {
         $set: {
-          outstanding: 0,
+          remaining: 0,
           monthlyPayment: 0,
           nextPaymentDate: "—",
           status: "paid-off",
@@ -154,17 +163,19 @@ export async function recordPayment(
     const payment = {
       amount,
       date: date || new Date().toISOString().split("T")[0],
+      _id: new ObjectId().toString(),
     };
 
-    const outstanding = Math.max(0, debt.outstanding - amount);
-    const status = outstanding === 0 ? ("paid-off" as const) : debt.status;
+    const totalPaid = [...(debt.payments || []), payment].reduce((sum, p) => sum + p.amount, 0);
+    const remaining = Math.max(0, debt.totalAmount - totalPaid);
+    const status = remaining === 0 ? ("paid-off" as const) : debt.status;
 
     await (db.collection(COLLECTION_NAME) as any).updateOne(
       { _id: new ObjectId(id) },
       {
         $push: { payments: payment },
         $set: {
-          outstanding,
+          remaining,
           status,
           updatedAt: new Date().toISOString(),
         },
@@ -182,7 +193,7 @@ export async function recordPayment(
 
 export async function deletePayment(
   debtId: string,
-  paymentDate: string,
+  paymentId: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const client = await clientPromise;
@@ -193,17 +204,17 @@ export async function deletePayment(
       return { success: false, error: "Debt not found" };
     }
 
-    const payments = (debt.payments || []).filter((p: Payment) => p.date !== paymentDate);
+    const payments = (debt.payments || []).filter((p: Payment) => p._id !== paymentId);
     const totalPaid = payments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
-    const outstanding = Math.max(0, debt.totalAmount - totalPaid);
-    const status = outstanding === 0 ? ("paid-off" as const) : debt.status;
+    const remaining = Math.max(0, debt.totalAmount - totalPaid);
+    const status = remaining === 0 ? ("paid-off" as const) : debt.status;
 
     await (db.collection(COLLECTION_NAME) as any).updateOne(
       { _id: new ObjectId(debtId) },
       {
         $set: {
           payments,
-          outstanding,
+          remaining,
           status,
           updatedAt: new Date().toISOString(),
         },

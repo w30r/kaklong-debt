@@ -64,7 +64,7 @@ export default async function SalaryPage() {
           ))}
         </div>
 
-        <div className="mb-4 sm:mb-6">
+        <div className="flex justify-end mb-4 sm:mb-6">
           <SalaryForm />
         </div>
 

@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 export default async function Home() {
   const debts = await getDebts();
 
-  const totalDebt = debts.reduce((sum, d) => sum + d.outstanding, 0);
+  const totalDebt = debts.reduce((sum, d) => sum + d.remaining, 0);
   const totalDebtBebetul = debts.reduce((sum, d) => sum + d.totalAmount, 0);
   const totalMonthly = debts.reduce((sum, d) => sum + d.monthlyPayment, 0);
   const activeDebts = debts.filter((d) => d.status !== "paid-off").length;
@@ -15,7 +15,7 @@ export default async function Home() {
 
   const stats = [
     {
-      label: "Total Outstanding",
+      label: "Total Remaining",
       value: `RM ${totalDebt.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`,
       accent: false,
     },

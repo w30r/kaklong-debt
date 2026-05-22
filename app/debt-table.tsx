@@ -109,7 +109,7 @@ export function DebtTable({ debts }: DebtTableProps) {
     { key: "bank", label: "Bank" },
     { key: "type", label: "Type" },
     { key: "totalAmount", label: "Total" },
-    { key: "outstanding", label: "Outstanding" },
+    { key: "remaining", label: "Remaining" },
     { key: "monthlyPayment", label: "Monthly" },
     { key: "interestRate", label: "Interest" },
     { key: "nextPaymentDate", label: "Next Payment" },
@@ -175,8 +175,20 @@ export function DebtTable({ debts }: DebtTableProps) {
                     <TableCell className="tabular-nums text-muted-foreground">
                       {formatCurrency(debt.totalAmount)}
                     </TableCell>
-                    <TableCell className="tabular-nums font-medium">
-                      {formatCurrency(debt.outstanding)}
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <span className="tabular-nums font-medium">
+                          {formatCurrency(debt.remaining)}
+                        </span>
+                        {debt.totalAmount > 0 && (
+                          <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full bg-chart-3 rounded-full transition-all"
+                              style={{ width: `${Math.min((debt.totalAmount - debt.remaining) / debt.totalAmount * 100, 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="tabular-nums text-muted-foreground">
                       {formatCurrency(debt.monthlyPayment)}
@@ -255,11 +267,19 @@ export function DebtTable({ debts }: DebtTableProps) {
                 </Badge>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                <div>
-                  <p className="text-muted-foreground text-xs">Outstanding</p>
+                <div className="col-span-2">
+                  <p className="text-muted-foreground text-xs mb-1">Remaining</p>
                   <p className="font-medium tabular-nums">
-                    {formatCurrency(debt.outstanding)}
+                    {formatCurrency(debt.remaining)}
                   </p>
+                  {debt.totalAmount > 0 && (
+                    <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mt-1.5">
+                      <div
+                        className="h-full bg-chart-3 rounded-full transition-all"
+                        style={{ width: `${Math.min((debt.totalAmount - debt.remaining) / debt.totalAmount * 100, 100)}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Monthly</p>

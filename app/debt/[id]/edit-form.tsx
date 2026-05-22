@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BankDebt, Payment } from "@/types/bank-debt";
+import { BankDebt, Payment, calculateOutstanding } from "@/types/bank-debt";
 import {
   updateDebt,
   markAsPaidOff,
@@ -71,6 +71,7 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
     const fd = new FormData();
     fd.set("bank", form.bank);
     fd.set("type", form.type);
+    fd.set("totalAmount", form.totalAmount);
     fd.set("monthlyPayment", form.monthlyPayment);
     fd.set("interestRate", form.interestRate);
     fd.set("nextPaymentDate", form.nextPaymentDate || "—");
@@ -111,9 +112,9 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
     router.refresh();
   };
 
-  const handleDeletePayment = async (paymentDate: string) => {
-    setDeletingPayment(paymentDate);
-    await deletePayment(debt._id, paymentDate);
+  const handleDeletePayment = async (paymentId: string) => {
+    setDeletingPayment(paymentId);
+    await deletePayment(debt._id, paymentId);
     setDeletingPayment(null);
     router.refresh();
   };
@@ -142,9 +143,10 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
 
   const payments = debt.payments || [];
 
-  const paidAmount = debt.totalAmount - debt.outstanding;
+  const paidAmount = debt.totalAmount - debt.remaining;
   const progress =
     debt.totalAmount > 0 ? (paidAmount / debt.totalAmount) * 100 : 0;
+  const overdue = calculateOutstanding(debt);
 
   if (editing) {
     return (
@@ -186,23 +188,19 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                 id="totalAmount"
                 type="number"
                 value={form.totalAmount}
-                readOnly
-                className="bg-muted"
+                onChange={(e) => setForm({ ...form, totalAmount: e.target.value })}
               />
-              <p className="text-xs text-muted-foreground">
-                This value is calculated from recorded payments and cannot be changed.
-              </p>
             </div>
             <div className="flex flex-col gap-2 sm:col-span-2">
-              <Label>Outstanding</Label>
+              <Label>Remaining</Label>
               <div className="text-lg font-medium">
                 RM{" "}
-                {debt.outstanding.toLocaleString("en-MY", {
+                {debt.remaining.toLocaleString("en-MY", {
                   minimumFractionDigits: 2,
                 })}
               </div>
               <p className="text-sm text-muted-foreground">
-                Record payments below to update the outstanding balance
+                Record payments below to update the remaining balance
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -302,11 +300,11 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
         <Card className="bg-destructive/5 border-destructive/20">
           <CardContent className="pt-4 sm:pt-6">
             <p className="text-xs sm:text-sm text-muted-foreground mb-1 uppercase tracking-wider font-medium">
-              Outstanding
+              Remaining
             </p>
             <p className="text-xl sm:text-2xl font-bold text-destructive tabular-nums">
               RM{" "}
-              {debt.outstanding.toLocaleString("en-MY", {
+              {debt.remaining.toLocaleString("en-MY", {
                 minimumFractionDigits: 2,
               })}
             </p>
@@ -349,7 +347,7 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full bg-chart-3 transition-all rounded-full"
@@ -359,6 +357,26 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
             <span className="text-sm font-bold text-chart-3 tabular-nums">
               {progress.toFixed(1)}%
             </span>
+          </div>
+          <div className="flex justify-between text-sm border-t border-border pt-3">
+            <div>
+              <span className="text-muted-foreground">Total Debt </span>
+              <span className="font-medium tabular-nums">
+                RM {debt.totalAmount.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Amount Paid </span>
+              <span className="font-medium text-chart-3 tabular-nums">
+                RM {paidAmount.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Overdue </span>
+              <span className={`font-medium tabular-nums ${overdue > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                RM {overdue.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -378,6 +396,11 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                 label: "Total Amount Paid",
                 value: `RM ${paidAmount.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`,
                 highlight: true,
+              },
+              {
+                label: "Overdue Amount",
+                value: `RM ${overdue.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`,
+                danger: overdue > 0,
               },
               { label: "Interest Rate", value: `${debt.interestRate}%` },
               {
@@ -403,7 +426,7 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                 >
                   <span className="text-muted-foreground">{detail!.label}</span>
                   <span
-                    className={`font-medium ${detail!.highlight ? "text-chart-3" : "text-foreground"}`}
+                    className={`font-medium ${detail!.highlight ? "text-chart-3" : detail!.danger ? "text-destructive" : "text-foreground"}`}
                   >
                     {detail!.value}
                   </span>
@@ -506,8 +529,8 @@ export function DebtEditForm({ debt }: DebtEditFormProps) {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => handleDeletePayment(payment.date)}
-                        disabled={deletingPayment === payment.date}
+                        onClick={() => handleDeletePayment(payment._id!)}
+                        disabled={deletingPayment === payment._id}
                       >
                         {deletingPayment === payment.date ? (
                           <Loader2 className="size-4 animate-spin" />

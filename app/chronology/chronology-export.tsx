@@ -229,7 +229,7 @@ export function ChronologyExport({ events }: ExportProps) {
           </Button>
         </div>
 
-        <div className="fixed -left-[9999px]">
+        <div className="fixed -left-[9999px]" style={{ width: "210mm" }}>
           <div ref={contentRef}>
             <ExportDocument events={events} />
           </div>

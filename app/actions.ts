@@ -3,6 +3,7 @@
 import clientPromise from "@/lib/mongodb";
 import { BankDebt, Payment } from "@/types/bank-debt";
 import { SalaryEntry } from "@/types/salary";
+import { ChronologyEvent, Attachment } from "@/types/chronology";
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 
@@ -317,5 +318,163 @@ export async function deleteSalaryEntry(
   } catch (error) {
     console.error("Failed to delete salary entry:", error);
     return { success: false, error: "Failed to delete entry" };
+  }
+}
+
+const CHRONOLOGY_COLLECTION = "chronology";
+
+export async function getChronologyEvents(): Promise<ChronologyEvent[]> {
+  try {
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+    const events = await db
+      .collection(CHRONOLOGY_COLLECTION)
+      .find({})
+      .sort({ date: 1 })
+      .toArray();
+
+    return events.map((event) => ({
+      ...event,
+      _id: event._id.toString(),
+    })) as ChronologyEvent[];
+  } catch (error) {
+    console.error("Failed to fetch chronology events:", error);
+    return [];
+  }
+}
+
+export async function getChronologyEvent(
+  id: string,
+): Promise<ChronologyEvent | null> {
+  try {
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+    const event = await db
+      .collection(CHRONOLOGY_COLLECTION)
+      .findOne({ _id: new ObjectId(id) });
+
+    if (!event) return null;
+
+    return { ...event, _id: event._id.toString() } as ChronologyEvent;
+  } catch (error) {
+    console.error("Failed to fetch chronology event:", error);
+    return null;
+  }
+}
+
+export async function addChronologyEvent(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const title = formData.get("title") as string;
+    const date = formData.get("date") as string;
+    const time = formData.get("time") as string;
+    const location = formData.get("location") as string;
+    const description = formData.get("description") as string;
+    const category = formData.get("category") as string;
+    const attachmentsRaw = formData.get("attachments") as string;
+
+    if (!title || !date) {
+      return {
+        success: false,
+        error: "Title and date are required",
+      };
+    }
+
+    const attachments: Attachment[] = attachmentsRaw
+      ? JSON.parse(attachmentsRaw)
+      : [];
+
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    const newEvent: Omit<ChronologyEvent, "_id"> = {
+      title,
+      date,
+      time: time || undefined,
+      location: location || "",
+      description: description || "",
+      category: category || "",
+      attachments,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await db.collection(CHRONOLOGY_COLLECTION).insertOne(newEvent);
+    revalidatePath("/chronology");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to add chronology event:", error);
+    return { success: false, error: "Failed to add event" };
+  }
+}
+
+export async function updateChronologyEvent(
+  id: string,
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const title = formData.get("title") as string;
+    const date = formData.get("date") as string;
+    const time = formData.get("time") as string;
+    const location = formData.get("location") as string;
+    const description = formData.get("description") as string;
+    const category = formData.get("category") as string;
+    const attachmentsRaw = formData.get("attachments") as string;
+
+    if (!title || !date) {
+      return {
+        success: false,
+        error: "Title and date are required",
+      };
+    }
+
+    const attachments: Attachment[] = attachmentsRaw
+      ? JSON.parse(attachmentsRaw)
+      : [];
+
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    await db.collection(CHRONOLOGY_COLLECTION).updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          title,
+          date,
+          time: time || undefined,
+          location: location || "",
+          description: description || "",
+          category: category || "",
+          attachments,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    );
+
+    revalidatePath("/chronology");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update chronology event:", error);
+    return { success: false, error: "Failed to update event" };
+  }
+}
+
+export async function deleteChronologyEvent(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    await db
+      .collection(CHRONOLOGY_COLLECTION)
+      .deleteOne({ _id: new ObjectId(id) });
+
+    revalidatePath("/chronology");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete chronology event:", error);
+    return { success: false, error: "Failed to delete event" };
   }
 }

@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Wallet, DollarSign, LogOut, Menu, X } from "lucide-react";
+import { Wallet, DollarSign, CalendarClock, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/app/auth-actions";
 
 const navItems = [
   { href: "/", label: "Debt Tracker", icon: Wallet },
   { href: "/salary", label: "Salary Tracker", icon: DollarSign },
+  { href: "/chronology", label: "Chronology", icon: CalendarClock },
 ];
 
 export function Sidebar() {

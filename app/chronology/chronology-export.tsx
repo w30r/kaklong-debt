@@ -64,7 +64,7 @@ function ExportDocument({ events }: { events: ChronologyEvent[] }) {
 
       <div className="space-y-6">
         {events.map((event, i) => (
-          <div key={event._id} className="flex gap-4">
+          <div key={event._id} className="flex gap-4" data-event-id={event._id}>
             <div className="flex flex-col items-center">
               <div className="w-3 h-3 rounded-full mt-1.5" style={{ backgroundColor: "#111827" }} />
               {i < events.length - 1 && (
@@ -133,25 +133,72 @@ export function ChronologyExport({ events }: ExportProps) {
       const imgData = await toPng(element, {
         quality: 1,
         pixelRatio: 2,
+        cacheBust: true,
+        skipFonts: true,
       });
 
       const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-      let heightLeft = pdfHeight;
-      let position = 0;
+      const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - 2 * margin;
+      const usableHeight = pageHeight - 2 * margin;
+      const PIXEL_RATIO = 2;
 
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pageHeight;
+      const imgProps = pdf.getImageProperties(imgData);
+      const contentHeight = (imgProps.height * contentWidth) / imgProps.width;
 
-      while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
+      // Measure each event's position within the document
+      const eventEls = element.querySelectorAll("[data-event-id]");
+      const wrapperRect = element.getBoundingClientRect();
+      const mmPerCssPx = contentWidth / wrapperRect.width;
+
+      const positions = Array.from(eventEls).map((el) => {
+        const rect = el.getBoundingClientRect();
+        return {
+          startMm: (rect.top - wrapperRect.top) * mmPerCssPx,
+          endMm: (rect.bottom - wrapperRect.top) * mmPerCssPx,
+        };
+      });
+
+      // Group events into pages — break before an event that doesn't fully fit
+      const pages: { startMm: number; endMm: number }[] = [];
+      let pageStart = 0;
+      for (const p of positions) {
+        if (p.endMm - pageStart > usableHeight && p.startMm > pageStart) {
+          pages.push({ startMm: pageStart, endMm: p.startMm });
+          pageStart = p.startMm;
+        }
+      }
+      pages.push({ startMm: pageStart, endMm: contentHeight });
+
+      // Load the screenshot into an Image for canvas cropping
+      const img = new Image();
+      const imgLoaded = new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+      });
+      img.src = imgData;
+      await imgLoaded;
+
+      // Render each page with its cropped image portion
+      for (let i = 0; i < pages.length; i++) {
+        if (i > 0) pdf.addPage();
+
+        const { startMm, endMm } = pages[i];
+        const pageHeightMm = endMm - startMm;
+
+        const startPx = Math.round(startMm / mmPerCssPx) * PIXEL_RATIO;
+        const cropPx = Math.round(pageHeightMm / mmPerCssPx) * PIXEL_RATIO;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = imgProps.width;
+        canvas.height = cropPx;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, startPx, imgProps.width, cropPx, 0, 0, imgProps.width, cropPx);
+        const cropped = canvas.toDataURL("image/png");
+
+        pdf.addImage(cropped, "PNG", margin, margin, contentWidth, pageHeightMm);
       }
 
       pdf.save("chronology.pdf");

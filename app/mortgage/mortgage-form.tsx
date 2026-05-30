@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { addContribution } from "./actions";
+import { MEMBER_EMOJIS } from "@/types/mortgage";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const REGULAR_MEMBERS = ["angah", "daddy", "sha", "kaklong"] as const;
+const REGULAR_MEMBERS = ["syamil", "daddy", "sha", "kaklong"] as const;
 const REGULAR_SHARE = 638;
 const now = new Date();
 
@@ -107,7 +108,7 @@ export function MortgageForm() {
                   }}
                   disabled={saving}
                 >
-                  {name}
+                  {MEMBER_EMOJIS[name]} {name}
                 </Button>
               ))}
             </div>

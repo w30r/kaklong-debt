@@ -1,7 +1,7 @@
 "use server";
 
 import clientPromise from "@/lib/mongodb";
-import { MortgageMonth, MemberContribution, MONTHLY_TARGET } from "@/types/mortgage";
+import { MortgageMonth, MemberContribution, MONTHLY_TARGET, REGULAR_MEMBERS, REGULAR_SHARE, CURRENT_OUTSTANDING, buildAmortizationSchedule, findPaymentsMade } from "@/types/mortgage";
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 
@@ -154,6 +154,87 @@ export async function togglePaidToBank(
   } catch (error) {
     console.error("Failed to toggle paid to bank:", error);
     return { success: false, error: "Failed to update month" };
+  }
+}
+
+export async function backfillMortgageHistory(): Promise<{
+  success: boolean;
+  monthsCreated: number;
+  error?: string;
+}> {
+  try {
+    const client = await clientPromise;
+    const db = client.db(DB_NAME);
+
+    const existingCount = await db.collection(MONTHS_COLLECTION).countDocuments();
+    if (existingCount > 1) {
+      return { success: false, monthsCreated: 0, error: "History already populated" };
+    }
+
+    const schedule = buildAmortizationSchedule();
+    const paymentsMade = findPaymentsMade(schedule, CURRENT_OUTSTANDING);
+
+    const currentYear = 2026;
+    const currentMonth = 5;
+    const totalMonthIndex = currentYear * 12 + currentMonth;
+    const firstMonthIndex = totalMonthIndex - paymentsMade + 1;
+
+    const startYear = Math.floor((firstMonthIndex - 1) / 12);
+    const startMonth = ((firstMonthIndex - 1) % 12) + 1;
+
+    let monthsCreated = 0;
+
+    for (let i = 0; i < paymentsMade; i++) {
+      const y = startYear + Math.floor((startMonth + i - 1) / 12);
+      const m = ((startMonth + i - 1) % 12) + 1;
+
+      const existingMonth = await db
+        .collection(MONTHS_COLLECTION)
+        .findOne({ year: y, month: m });
+      if (existingMonth) continue;
+
+      const paidDate = new Date(y, m - 1, 15, 12, 0, 0).toISOString();
+
+      await db.collection(MONTHS_COLLECTION).insertOne({
+        year: y,
+        month: m,
+        monthlyAmount: MONTHLY_TARGET,
+        isPaidToBank: true,
+        paidDate,
+        totalCollected: MONTHLY_TARGET,
+        extraAmount: 0,
+        createdAt: paidDate,
+        updatedAt: paidDate,
+      });
+
+      for (let mi = 0; mi < REGULAR_MEMBERS.length; mi++) {
+        const memberPaidDate = new Date(
+          y,
+          m - 1,
+          14 + (mi + 1),
+          10,
+          0,
+          0
+        ).toISOString();
+        await db.collection(CONTRIBUTIONS_COLLECTION).insertOne({
+          memberName: REGULAR_MEMBERS[mi],
+          year: y,
+          month: m,
+          amountPaid: REGULAR_SHARE,
+          paidAt: memberPaidDate,
+          createdAt: memberPaidDate,
+          updatedAt: memberPaidDate,
+        });
+      }
+
+      monthsCreated++;
+    }
+
+    revalidatePath("/mortgage");
+    return { success: true, monthsCreated };
+  } catch (error) {
+    console.error("Failed to backfill history:", error);
+    return { success: false, monthsCreated: 0, error: "Failed to backfill history" };
   }
 }
 

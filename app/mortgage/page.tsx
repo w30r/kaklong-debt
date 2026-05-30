@@ -1,21 +1,34 @@
 import { getMortgageMonths, getAllContributions } from "./actions";
 import { MortgageTable } from "./mortgage-table";
 import { MortgageForm } from "./mortgage-form";
-import { Card, CardContent } from "@/components/ui/card";
+import { BackfillButton } from "./backfill-button";
+import {
+  LOAN_AMOUNT,
+  MONTHLY_TARGET,
+  CURRENT_OUTSTANDING,
+  buildAmortizationSchedule,
+  findPaymentsMade,
+} from "@/types/mortgage";
 
 export default async function MortgagePage() {
   const months = await getMortgageMonths();
   const contributions = await getAllContributions();
 
-  const totalExtraPaid = months.reduce((sum, m) => sum + m.extraAmount, 0);
+  const schedule = buildAmortizationSchedule();
+  const paymentsMade = findPaymentsMade(schedule, CURRENT_OUTSTANDING);
 
-  const stats = [
-    { label: "Monthly Target", value: "RM 2,552.00" },
-    { label: "Total Loan", value: "RM 596,558.00" },
-    { label: "Outstanding", value: "RM 566,717.61" },
-    { label: "Interest Rate", value: "3.8% p.a." },
-    { label: "Total Extra Paid", value: `RM ${totalExtraPaid.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`, highlight: true },
-  ];
+  const lastPayment = schedule[paymentsMade - 1];
+  const totalPaid = paymentsMade * MONTHLY_TARGET;
+  const principalPaid = LOAN_AMOUNT - lastPayment.balance;
+  const interestPaid = totalPaid - principalPaid;
+  const progressPct = (principalPaid / LOAN_AMOUNT) * 100;
+
+  const payoffRow = schedule.find((r) => r.balance <= 0) || schedule[schedule.length - 1];
+  const remainingPayments = payoffRow.paymentNumber - paymentsMade;
+  const payoffDate = new Date(
+    Math.floor((2026 * 12 + 5 + remainingPayments - 1) / 12),
+    ((2026 * 12 + 5 + remainingPayments - 1) % 12) + 0
+  );
 
   return (
     <div className="flex flex-col flex-1 bg-background font-sans">
@@ -26,28 +39,27 @@ export default async function MortgagePage() {
           </h1>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-6 sm:mb-8 font-mono">
-          {stats.map((stat) => (
-            <Card key={stat.label} className={stat.highlight ? "border-chart-3 border-2" : ""}>
-              <CardContent className="p-2 sm:p-5">
-                <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight">
-                  {stat.label}
-                </p>
-                <p className={`text-sm sm:text-2xl font-semibold mt-0.5 sm:mt-1 truncate ${
-                  stat.highlight ? "text-chart-3" : "text-foreground"
-                }`}>
-                  {stat.value}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          {months.length <= 1 && <BackfillButton />}
+          <div className={months.length <= 1 ? "" : "ml-auto"}>
+            <MortgageForm />
+          </div>
         </div>
 
-        <div className="flex justify-end mb-4 sm:mb-6">
-          <MortgageForm />
-        </div>
-
-        <MortgageTable months={months} contributions={contributions} />
+        <MortgageTable
+          months={months}
+          contributions={contributions}
+          amortization={{
+            loanAmount: LOAN_AMOUNT,
+            currentOutstanding: lastPayment.balance,
+            payoffDate,
+            principalPaid,
+            interestPaid,
+            paymentsMade,
+            totalPayments: schedule.length,
+            progressPct,
+          }}
+        />
       </div>
     </div>
   );

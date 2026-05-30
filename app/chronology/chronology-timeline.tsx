@@ -18,9 +18,10 @@ import {
   MapPin,
   Search,
   FileText,
-  Image,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   Dialog,
@@ -61,43 +62,97 @@ function formatDate(dateStr: string) {
   });
 }
 
-function AttachmentThumb({ att }: { att: Attachment }) {
+function AttachmentPreview({ attachments }: { attachments: Attachment[] }) {
+  const [idx, setIdx] = useState(0);
   const [open, setOpen] = useState(false);
+  const current = attachments[idx];
+
+  if (!current) return null;
+
+  const prev = () => setIdx((i) => Math.max(0, i - 1));
+  const next = () => setIdx((i) => Math.min(attachments.length - 1, i + 1));
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-muted hover:bg-muted/80 transition-colors"
-      >
-        {att.type === "image" ? (
-          <Image className="size-3" />
-        ) : (
-          <FileText className="size-3" />
+    <div className="mt-3">
+      <div className="relative rounded-lg overflow-hidden border border-border bg-muted">
+        {attachments.length > 1 && (
+          <div className="absolute top-2 right-2 z-10 text-[10px] px-1.5 py-0.5 rounded-full bg-background/80 text-muted-foreground">
+            {idx + 1}/{attachments.length}
+          </div>
         )}
-        <span className="max-w-[120px] truncate">{att.name}</span>
-      </button>
+
+        {current.type === "image" ? (
+          <img
+            src={current.url}
+            alt={current.name}
+            className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => setOpen(true)}
+          />
+        ) : (
+          <div
+            className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/80 transition-colors min-h-20"
+            onClick={() => setOpen(true)}
+          >
+            <FileText className="size-8 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">{current.name}</p>
+              <p className="text-xs text-muted-foreground">PDF Document</p>
+            </div>
+          </div>
+        )}
+
+        {attachments.length > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); prev(); }}
+              disabled={idx === 0}
+              className="absolute left-1 top-1/2 -translate-y-1/2 z-10 size-7 rounded-full bg-background/80 hover:bg-background flex items-center justify-center disabled:opacity-30 transition-opacity"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); next(); }}
+              disabled={idx === attachments.length - 1}
+              className="absolute right-1 top-1/2 -translate-y-1/2 z-10 size-7 rounded-full bg-background/80 hover:bg-background flex items-center justify-center disabled:opacity-30 transition-opacity"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+            <div className="flex items-center justify-center gap-1 py-1.5 bg-muted/50">
+              {attachments.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); setIdx(i); }}
+                  className={`size-1.5 rounded-full transition-colors ${
+                    i === idx ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>{att.name}</DialogTitle>
+            <DialogTitle>{current.name}</DialogTitle>
           </DialogHeader>
-          {att.type === "image" ? (
+          {current.type === "image" ? (
             <img
-              src={att.url}
-              alt={att.name}
+              src={current.url}
+              alt={current.name}
               className="w-full rounded-lg object-contain max-h-[70vh]"
             />
           ) : (
             <iframe
-              src={att.url}
+              src={current.url}
               className="w-full h-[70vh] rounded-lg border border-border"
-              title={att.name}
+              title={current.name}
             />
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
 
@@ -186,11 +241,7 @@ function EventCard({
                   </div>
                 )}
                 {event.attachments && event.attachments.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {event.attachments.map((att) => (
-                      <AttachmentThumb key={att._id} att={att} />
-                    ))}
-                  </div>
+                  <AttachmentPreview attachments={event.attachments} />
                 )}
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
